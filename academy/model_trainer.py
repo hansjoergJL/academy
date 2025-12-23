@@ -443,7 +443,21 @@ class ModelTrainer:
 
             # Formatiere als Chat-Message für Chat-Modell
             messages = [{"role": "user", "content": prompt}]
-            inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to(device)
+            inputs = tokenizer.apply_chat_template(messages, return_tensors="pt", add_generation_prompt=True)
+
+            # Handle different return types from apply_chat_template
+            if isinstance(inputs, torch.Tensor):
+                inputs = {'input_ids': inputs}
+            elif isinstance(inputs, dict):
+                pass  # Already a dict
+            else:
+                raise ValueError(f"Unexpected inputs type: {type(inputs)}")
+
+            # Ensure attention_mask is present
+            if 'attention_mask' not in inputs:
+                inputs['attention_mask'] = torch.ones_like(inputs['input_ids'])
+
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
             # Generiere Antwort
             with torch.no_grad():
@@ -451,8 +465,7 @@ class ModelTrainer:
                     **inputs,
                     max_new_tokens=max_length,
                     num_return_sequences=1,
-                    do_sample=True,
-                    temperature=0.7,
+                    do_sample=False,  # Greedy decoding for faster CPU generation
                     pad_token_id=tokenizer.pad_token_id
                 )
 
