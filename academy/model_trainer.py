@@ -441,28 +441,24 @@ class ModelTrainer:
             model.to(device)
             model.eval()
 
-            # Tokenisiere Prompt
-            inputs = tokenizer(prompt, return_tensors="pt").to(device)
+            # Formatiere als Chat-Message für Chat-Modell
+            messages = [{"role": "user", "content": prompt}]
+            inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to(device)
 
             # Generiere Antwort
             with torch.no_grad():
                 outputs = model.generate(
                     **inputs,
-                    max_length=max_length + len(inputs['input_ids'][0]),
+                    max_new_tokens=max_length,
                     num_return_sequences=1,
                     do_sample=True,
                     temperature=0.7,
                     pad_token_id=tokenizer.pad_token_id
                 )
 
-            # Decode Antwort
-            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            console.print(f"[dim]Raw response: {repr(response)}[/dim]")
-
-            # Entferne Prompt aus Antwort
-            if response.startswith(prompt):
-                response = response[len(prompt):].strip()
-            console.print(f"[dim]Processed response: {repr(response)}[/dim]")
+            # Decode nur die neuen Tokens (Antwort)
+            response = tokenizer.decode(outputs[0][len(inputs['input_ids'][0]):], skip_special_tokens=True).strip()
+            console.print(f"[dim]Generated response: {repr(response)}[/dim]")
 
             console.print("[green]✅[/green] Antwort generiert")
             return response
