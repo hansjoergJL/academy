@@ -65,7 +65,7 @@ Kopieren Sie `config.yaml.template` nach `config.yaml` und passen Sie die Einste
 ## CLI Commands
 
 ```bash
-# Training mit neuen Dokumenten
+# Training mit neuen Dokumenten (bereitet Daten vor, Training manuell)
 academy train --input document.pdf --model-name my-specialist
 
 # Abfragen eines trainierten Modells
@@ -76,6 +76,21 @@ academy list-models
 
 # Initialisierung des Projekts
 academy init
+```
+
+### Manuelles Modell-Training
+
+Falls das Training in der CLI noch nicht implementiert ist, kann es manuell durchgeführt werden:
+
+```python
+from academy.model_trainer import ModelTrainer
+trainer = ModelTrainer()
+trainer.train_model("data/training/[model_name]_training.json", "[model_name]")
+```
+
+Beispiel für das Fine-Tuning-Leitfaden Modell:
+```python
+trainer.train_model("data/training/fine_tuning_guide_training.json", "fine_tuning_guide")
 ```
 
 ## Umsetzbarkeits-Analyse

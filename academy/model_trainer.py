@@ -3,17 +3,17 @@ Model Trainer für Academy
 TinyLlama Fine-Tuning mit LoRA und HuggingFace
 """
 
-import os
 import sys
 import time
 import json
 import torch
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Optional, Any
 from dataclasses import dataclass
 from rich.console import Console
-from rich.progress import Progress, track
+
 from rich.table import Table
+from rich.panel import Panel
 
 # Importiere Config Manager
 sys.path.insert(0, str(Path(__file__).parent))
@@ -121,9 +121,7 @@ class TinyLlamaTrainer:
             
             # Model Konfiguration für Device
             model_kwargs = {
-                "dtype": torch.float16 if self.config.fp16 else torch.float32
-            }
-            
+                "dtype": torch.float16 if self.config.fp16 and self.device == "cuda" else torch.float32
             }
             
             # Model laden
@@ -132,7 +130,8 @@ class TinyLlamaTrainer:
                 **model_kwargs
             )
             # LoRA Konfiguration
-                lora_alpha=self.config.lora_alpha,
+            lora_config = LoraConfig(
+                lora_alpha=int(self.config.lora_alpha),
                 target_modules=self.config.target_modules,
                 lora_dropout=self.config.lora_dropout,
                 bias="none",
@@ -151,7 +150,9 @@ class TinyLlamaTrainer:
             console.print(f"[red]❌[/red] Dependency Fehler: {e}")
             raise
         except Exception as e:
-            console.print(f"[red]❌[/red] Modell-Lade Fehler: {e}")
+            import traceback
+            console.print(f"[red]❌[/red] Training Fehler: {e}")
+            console.print(traceback.format_exc())
             raise
     
     def prepare_dataset(self, training_data_path: str):
@@ -192,14 +193,12 @@ class TinyLlamaTrainer:
                 return self.tokenizer(
                     examples["text"],
                     truncation=True,
-                    padding="max_length",
-                    max_length=self.config.max_length,
-                    return_overflowing_tokens=False,
+                    padding=False,
                 )
             
             tokenized_dataset = dataset.map(
                 tokenize_function,
-                batched=True,
+                batched=False,
                 remove_columns=dataset.column_names
             )
             
@@ -219,23 +218,9 @@ class TinyLlamaTrainer:
                 output_dir=output_dir,
                 num_train_epochs=self.config.num_epochs,
                 per_device_train_batch_size=self.config.batch_size,
-                gradient_accumulation_steps=self.config.gradient_accumulation_steps,
                 learning_rate=self.config.learning_rate,
-                logging_steps=10,
-                save_steps=self.config.save_steps,
-                save_total_limit=self.config.save_total_limit,
-                eval_strategy="no",
-                prediction_loss_only=True,
                 remove_unused_columns=False,
-                load_best_model_at_end=False,
-                
-                # Performance Optimierungen
-                fp16=self.config.fp16 and self.device == "cuda",
-                dataloader_num_workers=2,
-                
-                # Logging
-                report_to="none",  # Kann auf "tensorboard" gesetzt werden
-                disable_tqdm=False,
+                disable_tqdm=True,
             )
         except ImportError:
             console.print("[red]❌[/red] transformers nicht verfügbar")
@@ -277,7 +262,7 @@ class TinyLlamaTrainer:
             start_time = time.time()
             
             trainer.train()
-            
+
             end_time = time.time()
             training_time = end_time - start_time
             console.print(f"[green]✅[/green] Training abgeschlossen in {training_time:.1f}s")
@@ -311,12 +296,14 @@ class TinyLlamaTrainer:
             console.print("[red]❌[/red] Training Dependencies: {e}")
             return None
         except Exception as e:
-            console.print(f"[red]❌[/red] Training Fehler: {e}")
+            import traceback
+            console.print(f"[red]❌[/red] Dataset-Fehler: {e}")
+            console.print(traceback.format_exc())
             return None
     
     def _show_model_info(self, model_path: Path):
         """Zeige Modellinformationen"""
-        console.print("\\n[bold]📋 Modell-Informationen:[/bold]")
+        console.print("\n[bold]📋 Modell-Informationen:[/bold]")
         
         table = Table()
         table.add_column("Parameter", style="cyan")
@@ -352,13 +339,13 @@ class ModelTrainer:
         return TrainingConfig(
             # LoRA
             lora_rank=lora_cfg.get('r', 8),
-            lora_alpha=lora_cfg.get('alpha', 16),
+            lora_alpha=lora_cfg.get('alpha', 16.0),
             lora_dropout=lora_cfg.get('dropout', 0.05),
             target_modules=lora_cfg.get('target_modules', None),
-            
+
             # Training
             batch_size=training_cfg.get('batch_size', 1),
-            learning_rate=training_cfg.get('learning_rate', 2e-4),
+            learning_rate=float(training_cfg.get('learning_rate', 2e-4)),
             num_epochs=training_cfg.get('num_epochs', 3),
             max_length=training_cfg.get('max_length', 512),
             gradient_accumulation_steps=training_cfg.get('gradient_accumulation_steps', 4),
@@ -374,7 +361,15 @@ class ModelTrainer:
             save_steps=training_cfg.get('save_steps', 100),
             save_total_limit=training_cfg.get('save_total_limit', 3)
         )
-    
+
+    def prepare_dataset(self, data_path: str) -> Any:
+        """Bereite Dataset für Training vor"""
+        import json
+        with open(data_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        from datasets import Dataset
+        return Dataset.from_list(data)
+
     def train_model(self, training_data_path: str, model_name: str) -> Optional[str]:
         """Trainiere Modell mit gegebenen Daten"""
         console.print(Panel.fit(f"[bold blue]Model Training[/bold blue]\\nModel: {model_name}\\nDaten: {training_data_path}"))

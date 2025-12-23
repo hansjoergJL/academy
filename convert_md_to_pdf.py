@@ -5,7 +5,6 @@ Convert Markdown to PDF for Academy documentation
 
 import markdown
 import pdfkit
-from pathlib import Path
 import sys
 
 def markdown_to_pdf(md_path, pdf_path):
@@ -121,7 +120,7 @@ if __name__ == "__main__":
     
     success = markdown_to_pdf(md_file, pdf_file)
     if success:
-        print(f"📄 Markdown → PDF Konvertierung abgeschlossen")
+        print("📄 Markdown → PDF Konvertierung abgeschlossen")
         print(f"📍 Pfad: {pdf_file}")
     else:
         sys.exit(1)

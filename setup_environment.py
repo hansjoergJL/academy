@@ -7,7 +7,6 @@ Erstellt die notwendige Verzeichnisstruktur und konfiguriert die Umgebung
 import os
 import sys
 import subprocess
-from pathlib import Path
 import shutil
 
 

@@ -3,8 +3,6 @@ Test-Fälle für Academy Modules
 Kleine, fokussierte Tests für jede Komponente
 """
 
-import sys
-from pathlib import Path
 from rich.console import Console
 
 console = Console()
@@ -15,20 +13,18 @@ def test_model_trainer():
     console.print("[bold blue]🧪[/bold blue] Teste ModelTrainer...")
     
     try:
-        from model_trainer import ModelTrainer, TrainingConfig
-        from config_manager import ConfigManager
+        from academy.model_trainer import ModelTrainer
+        from academy.config_manager import ConfigManager
         
         # Test 1: Minimale Konfiguration
         config = ConfigManager()
         
         # Test mit kleinen Daten
-        test_data = {
-            "text": [
-                "Dies ist ein Test.",
-                "Das Modell sollte einfach Text generieren können.",
-                "Das Training sollte schnell durchlaufen."
-            ]
-        }
+        test_data = [
+            {"text": "Dies ist ein Test."},
+            {"text": "Das Modell sollte einfach Text generieren können."},
+            {"text": "Das Training sollte schnell durchlaufen."}
+        ]
         
         # Speichere Test-Daten
         import json
@@ -55,11 +51,22 @@ def test_model_trainer():
         try:
             dataset = trainer.prepare_dataset(test_data_path)
             console.print(f"[green]✅[/green] Dataset vorbereitet: {len(dataset)} Beispiele")
-            return dataset
         except Exception as e:
             console.print(f"[red]❌[/red] Dataset-Fehler: {e}")
             return None
-        
+
+        # Test 4: Kurzes Training
+        console.print("[yellow]🔍[/yellow] Teste kurzes Training...")
+        try:
+            result = trainer.train_model(test_data_path, "test_model")
+            if result:
+                console.print("[green]✅[/green] Training abgeschlossen")
+            else:
+                console.print("[red]❌[/red] Training fehlgeschlagen")
+        except Exception as e:
+            console.print(f"[red]❌[/red] Training-Fehler: {e}")
+            return None
+
         console.print("[bold green]✅[/bold green] ModelTrainer Test bestanden!")
         return True
         
@@ -76,8 +83,8 @@ def test_knowledge_distiller():
     console.print("[bold blue]🧠[/bold blue] Teste KnowledgeDistiller...")
     
     try:
-        from knowledge_distiller import KnowledgeDistiller
-        from config_manager import ConfigManager
+        from academy.knowledge_distiller import KnowledgeDistiller
+        from academy.config_manager import ConfigManager
         
         config = ConfigManager()
         distiller = KnowledgeDistiller(config)
@@ -106,15 +113,14 @@ def test_document_processor():
     console.print("[bold blue]📄[/bold blue] Teste DocumentProcessor...")
     
     try:
-        from document_processor import DocumentProcessor
-        from config_manager import ConfigManager
+        from academy.document_processor import DocumentProcessor
+        from academy.config_manager import ConfigManager
         
         config = ConfigManager()
-        processor = DocumentProcessor(config)
-        
+        DocumentProcessor(config)
+
         # Test 1: Grundfunktionalität
-        test_text = "Dies ist ein Test-Text für die Verarbeitung."
-        
+
         console.print("[green]✅[/green] DocumentProcessor geladen!")
         console.print("[bold green]✅[/bold green] DocumentProcessor Test bestanden!")
         return True
@@ -132,8 +138,8 @@ def test_config_manager():
     console.print("[bold blue]⚙️[/bold blue] Teste ConfigManager...")
     
     try:
-        from config_manager import ConfigManager
-        
+        from academy.config_manager import ConfigManager
+
         # Test 1: Konfiguration laden
         config = ConfigManager()
         console.print("[green]✅[/green] ConfigManager geladen!")
@@ -188,7 +194,7 @@ def run_all_tests():
         else:
             failed += 1
     
-    console.print(f"\n[bold]📈 Ergebnis:[/bold]")
+    console.print("\n[bold]📈 Ergebnis:[/bold]")
     console.print(f"  [green]Bestanden:[/green] {passed}/{len(tests)}")
     console.print(f"  [red]Fehlgeschlagen:[/red] {failed}/{len(tests)}")
     

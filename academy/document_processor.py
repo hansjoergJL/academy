@@ -3,7 +3,6 @@ Dokumentenprozessor für Academy
 Extrahiert Text aus PDFs und anderen Dokumentformaten
 """
 
-import os
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Union

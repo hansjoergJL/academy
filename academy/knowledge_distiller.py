@@ -3,7 +3,6 @@ Knowledge Distiller für Academy
 Verwendet große Modelle zur Wissensextraktion und Datengenerierung
 """
 
-import os
 import sys
 import time
 import json
@@ -79,7 +78,7 @@ class KnowledgeDistiller:
     def test_connection(self) -> bool:
         """Teste Verbindung zur API"""
         try:
-            response = self.client.chat.completions.create(
+            _ = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": "Test connection"}],
                 max_tokens=10
@@ -262,7 +261,7 @@ class KnowledgeDistiller:
                     max_tokens=max_tokens,
                     temperature=0.7
                 )
-                
+
                 content = response.choices[0].message.content
                 if content:
                     return content.strip()
@@ -391,8 +390,8 @@ class KnowledgeDistiller:
         """Formattiere Beispiele für TinyLlama Training"""
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        training_data = []
+
+        training_data: List[Dict[str, Any]] = []
         
         for example in examples:
             # Für einfache Sätze: Nur Text-To-Text Format

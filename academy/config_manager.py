@@ -33,7 +33,7 @@ class ConfigManager:
             config_path = project_root / "config.yaml"
         
         self.config_path = Path(config_path) if config_path else None
-        self._config = {}
+        self._config: Dict[str, Any] = {}
         
         # Lade Konfiguration
         self.load_config()
@@ -47,7 +47,7 @@ class ConfigManager:
                 print(f"✅ Konfiguration geladen: {self.config_path}")
             else:
                 print(f"⚠️  Konfigurationsdatei nicht gefunden: {self.config_path}")
-                print(f"   Erstelle Standardkonfiguration...")
+                print("   Erstelle Standardkonfiguration...")
                 self._config = self._get_default_config()
                 self.save_config()
         except Exception as e:

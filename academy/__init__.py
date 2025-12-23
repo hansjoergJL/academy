@@ -2,7 +2,6 @@
 __version__ = "0.1.0"
 
 # Default imports
-import os
 import sys
 from pathlib import Path
 

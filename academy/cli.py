@@ -5,7 +5,6 @@ Hauptkommandozeilen-Interface mit allen Commands
 
 import click
 import sys
-import os
 from pathlib import Path
 from rich.console import Console
 from rich.table import Table
@@ -54,7 +53,7 @@ def init(ctx):
     
     # Modellname
     current_model = config_manager.get('openrouter.model_name')
-    model_name = Prompt.ask(f"Modellname", default=current_model)
+    model_name = Prompt.ask("Modellname", default=current_model)
     config_manager.set('openrouter.model_name', model_name)
     
     # HuggingFace Token
@@ -219,8 +218,8 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation, cl):
             distiller.format_for_training(examples, training_path)
             
             # 3. Training (placeholder) - Normale Pipeline
-            console.print(f"\n[blue]🤖[/blue] Phase 3: Modelltraining")
-            console.print(f"[green]✅[/green] Vorbereitung abgeschlossen")
+            console.print("\n[blue]🤖[/blue] Phase 3: Modelltraining")
+            console.print("[green]✅[/green] Vorbereitung abgeschlossen")
             console.print(f"[yellow]📊[/yellow] {len(chunks)} Chunks → {len(examples)} Trainingsbeispiele")
             console.print(f"[yellow]💾[/yellow] Trainingsdaten: {training_path}")
             console.print("[yellow]⚠️  Modelltraining wird in nächster Version implementiert[/yellow]")
@@ -236,8 +235,6 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation, cl):
 @click.pass_context
 def query(ctx, model_name, interactive):
     """Frage ein trainiertes Modell ab"""
-    config_manager = ConfigManager(ctx.obj.get('config_path'))
-    
     console.print(Panel.fit(f"[bold blue]Query[/bold blue]\nModell: {model_name}"))
     
     # TODO: Implementiere Abfragelogik
@@ -295,7 +292,7 @@ def check_pdf(path):
         
         # Zeige erste paar Zeilen
         if chunks:
-            console.print(f"\n[bold]Vorschau (erste 200 Zeichen):[/bold]")
+            console.print("\n[bold]Vorschau (erste 200 Zeichen):[/bold]")
             console.print(chunks[0].text[:200] + "..." if len(chunks[0].text) > 200 else chunks[0].text)
         
     except Exception as e:
