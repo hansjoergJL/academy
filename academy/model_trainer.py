@@ -121,11 +121,10 @@ class TinyLlamaTrainer:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.tokenizer.pad_token = self.tokenizer.eos_token
             
-            # Model Konfiguration für Device
-            model_kwargs = {
-                "torch_dtype": torch.float16 if self.config.fp16 else torch.float32,
-                "device_map": "auto"
-            }
+                # Model Konfiguration für Device (ohne device_map - nur dtype)
+                model_kwargs = {
+                    "dtype": torch.float16 if self.config.fp16 else torch.float32
+                }
             
             # Quantisierung für GPU
             if self.device == "cuda":
