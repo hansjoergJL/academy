@@ -110,14 +110,14 @@ def config(ctx, setup, validate, show):
         
         # Training
         training = config_manager.get_training_config()
-        table.add_row("Training", "Batch Size", str(training['batch_size']))
-        table.add_row("Training", "Epochs", str(training['num_epochs']))
-        table.add_row("Training", "Device", training['device'])
+        table.add_row("Training", "Batch Size", str(training.get('batch_size', 1)))
+        table.add_row("Training", "Epochs", str(training.get('num_epochs', 3)))
+        table.add_row("Training", "Device", training.get('device', 'auto'))
         
         # Pfade
         paths = config_manager.get_paths_config()
-        table.add_row("Pfade", "Daten", paths['data_dir'])
-        table.add_row("Pfade", "Modelle", paths['models_dir'])
+        table.add_row("Pfade", "Daten", paths.get('data_dir', './data'))
+        table.add_row("Pfade", "Modelle", paths.get('models_dir', './models'))
         
         console.print(table)
     else:
@@ -130,8 +130,9 @@ def config(ctx, setup, validate, show):
 @click.option('--output', '-o', help='Ausgabeverzeichnis (überschreibt config)')
 @click.option('--overwrite', is_flag=True, help='Vorhandenes Modell überschreiben')
 @click.option('--skip-distillation', is_flag=True, help='Überspringe Wissensdestillation')
+@click.option('--cl', is_flag=True, help='Nur existierende Trainingsdaten nutzen, ohne neue Destillation')
 @click.pass_context
-def train(ctx, input, model_name, output, overwrite, skip_distillation):
+def train(ctx, input, model_name, output, overwrite, skip_distillation, cl):
     """Trainiere ein spezialisiertes Modell aus PDF-Dokumenten"""
     config_manager = ConfigManager(ctx.obj.get('config_path'))
     
@@ -154,6 +155,8 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation):
     
     console.print(f"[green]✓[/green] Starte Training für Modell: {model_name}")
     
+    paths = config_manager.get_paths_config()
+    
     try:
         from document_processor import DocumentProcessor
         from knowledge_distiller import KnowledgeDistiller
@@ -168,38 +171,59 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation):
             chunks = processor.process_directory(input_path)
         
         # Speichere Chunks
-        paths = config_manager.get_paths_config()
         chunks_path = Path(paths['processed_chunks']) / f"{model_name}_chunks.json"
         processor.save_chunks(chunks, chunks_path)
         
-        if skip_distillation:
-            console.print("[yellow]⚠️  Wissensdestillation übersprungen[/yellow]")
-            console.print(f"[green]✅[/green] Chunks gespeichert: {chunks_path}")
-            return
-        
-        # 2. Wissensdestillation
-        console.print("\n[blue]🧠[/blue] Phase 2: Wissensdestillation")
-        distiller = KnowledgeDistiller(config_manager)
-        
-        # Teste API Verbindung
-        if not distiller.test_connection():
-            console.print("[red]❌ API Verbindung fehlgeschlagen[/red]")
-            return
-        
-        # Führe Destillation durch
-        examples_path = Path(paths['training_data']) / f"{model_name}_examples.json"
-        examples = distiller.distill_chunks(chunks, examples_path)
-        
-        # Formattiere für Training
-        training_path = Path(paths['training_data']) / f"{model_name}_training.json"
-        distiller.format_for_training(examples, training_path)
-        
-        # 3. Training (placeholder)
-        console.print(f"\n[blue]🤖[/blue] Phase 3: Modelltraining")
-        console.print(f"[green]✅[/green] Vorbereitung abgeschlossen")
-        console.print(f"[yellow]📊[/yellow] {len(chunks)} Chunks → {len(examples)} Trainingsbeispiele")
-        console.print(f"[yellow]💾[/yellow] Trainingsdaten: {training_path}")
-        console.print("[yellow]⚠️  Modelltraining wird in nächster Version implementiert[/yellow]")
+        if cl:
+            # --cl Option: Nutze existierende Trainingsdaten
+            console.print("\n[blue]🤖[/blue] Phase 3: Training mit existierenden Daten (--cl)")
+            from model_trainer import ModelTrainer
+            
+            trainer = ModelTrainer(config_manager)
+            
+            # Finde existierende Trainingsdaten
+            training_data_files = list(Path(paths['training_data']).glob("*_training.json"))
+            
+            if not training_data_files:
+                console.print("[red]❌ Keine Trainingsdaten gefunden![/red]")
+                console.print(f"[yellow]💡[/yellow] Suche in: {paths['training_data']}")
+                return
+            
+            # Verwende neueste Trainingsdaten
+            latest_training = max(training_data_files, key=lambda f: f.stat().st_mtime)
+            console.print(f"[green]✅[/green] Verwende Trainingsdaten: {latest_training}")
+            
+            # Führe Training durch
+            result_path = trainer.train_model(str(latest_training), model_name)
+            
+            if result_path:
+                console.print(f"[green]✅[/green] Training abgeschlossen: {result_path}")
+            else:
+                console.print("[red]❌[/red] Training fehlgeschlagen")
+        else:
+            # 2. Wissensdestillation
+            console.print("\n[blue]🧠[/blue] Phase 2: Wissensdestillation")
+            distiller = KnowledgeDistiller(config_manager)
+            
+            # Teste API Verbindung
+            if not distiller.test_connection():
+                console.print("[red]❌ API Verbindung fehlgeschlagen[/red]")
+                return
+            
+            # Führe Destillation durch
+            examples_path = Path(paths['training_data']) / f"{model_name}_examples.json"
+            examples = distiller.distill_chunks(chunks, examples_path)
+            
+            # Formattiere für Training
+            training_path = Path(paths['training_data']) / f"{model_name}_training.json"
+            distiller.format_for_training(examples, training_path)
+            
+            # 3. Training (placeholder) - Normale Pipeline
+            console.print(f"\n[blue]🤖[/blue] Phase 3: Modelltraining")
+            console.print(f"[green]✅[/green] Vorbereitung abgeschlossen")
+            console.print(f"[yellow]📊[/yellow] {len(chunks)} Chunks → {len(examples)} Trainingsbeispiele")
+            console.print(f"[yellow]💾[/yellow] Trainingsdaten: {training_path}")
+            console.print("[yellow]⚠️  Modelltraining wird in nächster Version implementiert[/yellow]")
         
     except Exception as e:
         console.print(f"[red]❌[/red] Training fehlgeschlagen: {e}")
@@ -275,7 +299,7 @@ def check_pdf(path):
             console.print(chunks[0].text[:200] + "..." if len(chunks[0].text) > 200 else chunks[0].text)
         
     except Exception as e:
-        console.print(f"[red]❌ Fehler bei PDF-Prüfung: {e}[/red]")
+        console.print(f"[red]❌[/red] Fehler bei PDF-Prüfung: {e}")
 
 
 @cli.command()
@@ -297,7 +321,7 @@ def test_api():
             console.print("[red]❌[/red] API Verbindung fehlgeschlagen")
         
     except Exception as e:
-        console.print(f"[red]❌ Fehler bei API-Test: {e}[/red]")
+        console.print(f"[red]❌[/red] Fehler bei API-Test: {e}")
 
 
 def main():
@@ -308,7 +332,7 @@ def main():
         console.print("\n[yellow]👋 Auf Wiedersehen![/yellow]")
         sys.exit(0)
     except Exception as e:
-        console.print(f"\n[red]❌ Fehler: {e}[/red]")
+        console.print(f"\n[red]❌[/red] Fehler: {e}")
         sys.exit(1)
 
 

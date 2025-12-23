@@ -236,6 +236,8 @@ class TinyLlamaTrainer:
                 logging_steps=10,
                 save_steps=self.config.save_steps,
                 save_total_limit=self.config.save_total_limit,
+                eval_strategy="no",
+                prediction_loss_only=True,
                 remove_unused_columns=False,
                 load_best_model_at_end=False,
                 
