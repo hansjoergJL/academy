@@ -1,0 +1,204 @@
+# Academy Configuration Template
+# Kopieren Sie diese Datei nach config.yaml und passen Sie die Einstellungen an
+
+# OpenRouter API Konfiguration
+openrouter:
+  # Environment Variable Namen für API Zugangsdaten
+  api_key_env: "OPENROUTER_API_KEY"
+  
+  # Alternative: Direkter API Key (nicht empfohlen für Produktion)
+  # api_key: "your-api-key-here"
+  
+  # Free Model für Wissensdestillation (Beispiele)
+  model_name: "meta-llama/llama-3.2-3b-instruct:free"
+  
+  # API Konfiguration
+  base_url: "https://openrouter.ai/api/v1"
+  timeout: 30
+  max_retries: 3
+  rate_limit_delay: 1.0  # Sekunden zwischen Anfragen
+
+# HuggingFace Konfiguration
+huggingface:
+  # Environment Variable für HuggingFace Token (für private Models)
+  token_env: "HUGGINGFACE_TOKEN"
+  
+  # Base Model für Fine-Tuning
+  base_model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  
+  # Cache Verzeichnis
+  cache_dir: "./models/hf_cache"
+  
+  # Model Repository Settings
+  push_to_hub: false
+  repository_name: ""
+  private: false
+
+# TinyLlama Training Konfiguration
+training:
+  # LoRA (Low-Rank Adaptation) Einstellungen
+  lora:
+    r: 8                    # Rank
+    alpha: 16               # Scaling parameter
+    dropout: 0.05           # Dropout rate
+    target_modules:         # Module für Adaptation
+      - "q_proj"
+      - "v_proj"
+      - "k_proj"
+      - "o_proj"
+      - "gate_proj"
+      - "up_proj"
+      - "down_proj"
+  
+  # Training Parameter
+  batch_size: 1
+  learning_rate: 2e-4
+  num_epochs: 3
+  max_length: 512           # Maximale Sequenzlänge
+  
+  # Hardware Einstellungen
+  device: "auto"           # "cpu", "cuda", "mps" oder "auto"
+  use_cpu: false           # Force CPU usage
+  
+  # Output Verzeichnisse
+  output_dir: "./models/custom"
+  logging_dir: "./logs"
+
+# Dokumentenverarbeitung
+documents:
+  # Unterstützte Formate
+  supported_formats:
+    - ".pdf"
+    - ".txt"
+    - ".md"
+  
+  # PDF Verarbeitung
+  pdf:
+    extraction_method: "pypdf"  # "pypdf" oder "pymupdf"
+    preserve_layout: false
+    extract_images: false
+  
+  # Text Chunking
+  chunking:
+    # Chunk Größe in Zeichen
+    chunk_size: 1000
+    
+    # Überlappung zwischen Chunks
+    chunk_overlap: 200
+    
+    # Chunking Strategie
+    strategy: "recursive"       # "recursive", "fixed", "semantic"
+    
+    # Trennzeichen für recursive strategy
+    separators:
+      - "\n\n"
+      - "\n"
+      - ". "
+      - "? "
+      - "! "
+      - " "
+      - ""
+
+# Wissensdestillation
+distillation:
+  # Prompt Templates für Satzgenerierung
+  prompts:
+    # Haupt-Prompt für einfache Satzgenerierung gemäß Spezifikation
+    knowledge_extraction: |
+      Extrahiere aus dem folgenden Text genau {target_sentences} einfache, klare Sätze. 
+      Jeder Satz muss eine eigenständige, vollständige Information enthalten und einfach verständlich sein. 
+      Formuliere als Aussagesatz.
+      
+      Text: {chunk}
+      
+      {target_sentences} Sätze:
+  
+  # Zielanzahl der generierten Sätze (Ihre Anforderung: 10000)
+  target_total_sentences: 200
+  
+  # Anzahl der generierten Beispiele pro Chunk (wird automatisch berechnet)
+  examples_per_chunk: auto
+  
+  # Qualitätssicherung
+  min_sentence_length: 10
+  max_sentence_length: 200
+  filter_duplicates: true
+
+# Daten-Pfade
+paths:
+  # Datenverzeichnisse
+  data_dir: "./data"
+  raw_documents: "./data/raw"
+  processed_chunks: "./data/processed"
+  training_data: "./data/training"
+  
+  # Modellverzeichnisse
+  models_dir: "./models"
+  checkpoints_dir: "./models/checkpoints"
+  
+  # Log Verzeichnis
+  logs_dir: "./logs"
+
+# Logging Konfiguration
+logging:
+  level: "INFO"              # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/academy.log"
+  max_file_size: "10MB"
+  backup_count: 5
+
+# CLI Konfiguration
+cli:
+  # Standardwerte für Commands
+  default_model_name: "custom-specialist"
+  default_output_format: "json"
+  
+  # Interaktive Einstellungen
+  query_history_file: "./.query_history"
+  max_history_entries: 100
+  
+  # Progress Bar
+  show_progress: true
+  progress_style: "bar"
+
+# Performance und Ressourcen
+performance:
+  # Parallelisierung
+  max_workers: 4
+  
+  # Memory Management
+  max_memory_usage: "8GB"
+  cleanup_cache: true
+  
+  # Batch Processing
+  batch_processing: true
+  batch_size_distillation: 5
+
+# Error Handling
+error_handling:
+  # Retry Konfiguration
+  max_retries: 3
+  retry_delay: 2.0
+  
+  # Fallback Strategien
+  fallback_on_error: true
+  
+  # Error Reporting
+  report_errors: false
+  error_webhook: ""
+
+# Sicherheitskonfiguration
+security:
+  # API Key Validierung
+  validate_api_keys: true
+  
+  # Dateizugriffsbeschränkungen
+  allowed_file_types:
+    - ".pdf"
+    - ".txt"
+    - ".md"
+  max_file_size: "100MB"
+  
+  # Vertrauliche Daten
+  mask_sensitive_data: true
+  log_api_keys: false
