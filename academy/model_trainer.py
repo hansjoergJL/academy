@@ -457,10 +457,12 @@ class ModelTrainer:
 
             # Decode Antwort
             response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            console.print(f"[dim]Raw response: {repr(response)}[/dim]")
 
             # Entferne Prompt aus Antwort
             if response.startswith(prompt):
                 response = response[len(prompt):].strip()
+            console.print(f"[dim]Processed response: {repr(response)}[/dim]")
 
             console.print("[green]✅[/green] Antwort generiert")
             return response
