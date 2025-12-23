@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from rich.console import Console
 from rich.progress import Progress, track
 from rich.table import Table
-from rich.panel import Panel
 
 # Importiere Config Manager
 sys.path.insert(0, str(Path(__file__).parent))
@@ -113,7 +112,6 @@ class TinyLlamaTrainer:
         console.print(f"[blue]🤖[/blue] Lade Modell: {model_name}")
         
         try:
-            # Import im try-catch für bessere Fehlermeldungen
             from transformers import AutoTokenizer, AutoModelForCausalLM
             from peft import LoraConfig, get_peft_model, TaskType
             
@@ -121,28 +119,19 @@ class TinyLlamaTrainer:
             self.tokenizer = AutoTokenizer.from_pretrained(model_name)
             self.tokenizer.pad_token = self.tokenizer.eos_token
             
-                # Model Konfiguration für Device (ohne device_map - nur dtype)
-                model_kwargs = {
-                    "dtype": torch.float16 if self.config.fp16 else torch.float32
-                }
+            # Model Konfiguration für Device
+            model_kwargs = {
+                "dtype": torch.float16 if self.config.fp16 else torch.float32
+            }
             
-            # Quantisierung für GPU
-            if self.device == "cuda":
-                try:
-                    model_kwargs["load_in_8bit"] = True
-                    console.print("[green]✅[/green] 8-bit Quantisierung aktiviert")
-                except:
-                    console.print("[yellow]⚠️[/yellow] 8-bit nicht verfügbar, nutze Standard")
+            }
             
             # Model laden
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 **model_kwargs
             )
-            
             # LoRA Konfiguration
-            lora_config = LoraConfig(
-                r=self.config.lora_rank,
                 lora_alpha=self.config.lora_alpha,
                 target_modules=self.config.target_modules,
                 lora_dropout=self.config.lora_dropout,
@@ -185,9 +174,9 @@ class TinyLlamaTrainer:
                 text = ""
                 for msg in messages:
                     if msg["role"] == "user":
-                        text += f"User: {msg['content']}\n"
+                        text += f"User: {msg['content']}\\n"
                     elif msg["role"] == "assistant":
-                        text += f"Assistant: {msg['content']}\n"
+                        text += f"Assistant: {msg['content']}\\n"
                 texts.append(text.strip())
         
         console.print(f"[green]✅[/green] {len(texts)} Trainingsbeispiele geladen")
@@ -261,7 +250,6 @@ class TinyLlamaTrainer:
         output_dir.mkdir(parents=True, exist_ok=True)
         
         try:
-            # Import im try-catch für bessere Fehlermeldungen  
             from transformers import Trainer, DataCollatorForLanguageModeling
             
             # Dataset vorbereiten
@@ -319,8 +307,8 @@ class TinyLlamaTrainer:
             
             return str(output_dir)
             
-        except ImportError as e:
-            console.print(f"[red]❌[/red] Training Dependencies: {e}")
+        except ImportError:
+            console.print("[red]❌[/red] Training Dependencies: {e}")
             return None
         except Exception as e:
             console.print(f"[red]❌[/red] Training Fehler: {e}")
@@ -328,7 +316,7 @@ class TinyLlamaTrainer:
     
     def _show_model_info(self, model_path: Path):
         """Zeige Modellinformationen"""
-        console.print("\n[bold]📋 Modell-Informationen:[/bold]")
+        console.print("\\n[bold]📋 Modell-Informationen:[/bold]")
         
         table = Table()
         table.add_column("Parameter", style="cyan")
@@ -389,9 +377,9 @@ class ModelTrainer:
     
     def train_model(self, training_data_path: str, model_name: str) -> Optional[str]:
         """Trainiere Modell mit gegebenen Daten"""
-        console.print(Panel.fit(f"[bold blue]Model Training[/bold blue]\nModel: {model_name}\nDaten: {training_data_path}"))
+        console.print(Panel.fit(f"[bold blue]Model Training[/bold blue]\\nModel: {model_name}\\nDaten: {training_data_path}"))
         
-        # Validiere Eingabedatei
+        # Validiere Eingabedaten
         if not Path(training_data_path).exists():
             console.print(f"[red]❌[/red] Trainingsdaten nicht gefunden: {training_data_path}")
             return None
@@ -416,7 +404,7 @@ class ModelTrainer:
         
         if models_dir.exists():
             for model_path in models_dir.iterdir():
-                if model_path.is_dir():
+                if model_path.is_dir() and model_path.name != 'hf_cache':
                     # Berechne Größe
                     model_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
                     size_str = f"{model_size / 1024 / 1024:.1f} MB"
