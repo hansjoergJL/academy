@@ -23,22 +23,15 @@ echo "Stelle vorgeschlagene Frage:"
 echo "$DEFAULT_QUESTION"
 echo ""
 
-# Placeholder für Query Engine (noch nicht implementiert)
-echo "Antwort: [Placeholder - Query Engine ist noch nicht implementiert]"
-echo "Die Antwort würde hier vom Modell generiert werden."
-echo ""
+# Führe Query mit der Academy CLI aus
+python academy/cli.py query --model-name "$MODEL_NAME" --prompt "$DEFAULT_QUESTION"
 
-# Interaktive Abfrage-Schleife
-while true; do
-    echo "Geben Sie eine weitere Frage ein (oder 'exit' zum Beenden):"
-    read -r question
-
-    if [ "$question" = "exit" ]; then
-        echo "Abfrage beendet."
-        break
-    fi
-
-    echo "Frage: $question"
-    echo "Antwort: [Placeholder - Implementierung ausstehend]"
+# Prüfe, ob interaktiver Modus gewünscht ist
+if [ "$1" = "-i" ]; then
     echo ""
-done
+    echo "Wechsle zu interaktivem Modus..."
+    python academy/cli.py query --model-name "$MODEL_NAME" --interactive
+else
+    echo ""
+    echo "Für interaktive Abfragen verwenden Sie: $0 -i"
+fi
