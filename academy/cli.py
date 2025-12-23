@@ -15,6 +15,7 @@ from rich.panel import Panel
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config_manager import get_config, ConfigManager
+from model_trainer import ModelTrainer
 
 console = Console()
 
@@ -232,13 +233,54 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation, cl):
 @cli.command()
 @click.option('--model-name', '-m', required=True, help='Name des abzufragenden Modells')
 @click.option('--interactive', '-i', is_flag=True, help='Interaktiver Abfragemodus')
+@click.option('--prompt', '-p', help='Direkter Prompt für nicht-interaktive Abfrage')
+@click.option('--max-length', '-l', default=100, help='Maximale Antwortlänge')
 @click.pass_context
-def query(ctx, model_name, interactive):
+def query(ctx, model_name, interactive, prompt, max_length):
     """Frage ein trainiertes Modell ab"""
+    config_manager = ConfigManager(ctx.obj.get('config_path'))
+
     console.print(Panel.fit(f"[bold blue]Query[/bold blue]\nModell: {model_name}"))
-    
-    # TODO: Implementiere Abfragelogik
-    console.print("[yellow]⚠️  Query-Logik noch nicht implementiert[/yellow]")
+
+    # Validiere Konfiguration
+    if not config_manager.validate_config():
+        console.print("[red]❌[/red] Konfiguration nicht valide!")
+        return
+
+    # Initialisiere ModelTrainer
+    trainer = ModelTrainer(config_manager)
+
+    # Modellpfad finden
+    model_path = Path(trainer.training_config.output_dir) / model_name
+
+    if not model_path.exists():
+        console.print(f"[red]❌[/red] Modell nicht gefunden: {model_path}")
+        console.print("[yellow]💡[/yellow] Verwende 'academy list-models' um verfügbare Modelle zu sehen.")
+        return
+
+    if interactive:
+        # Interaktiver Modus
+        console.print("[green]💬[/green] Interaktiver Modus - 'exit' zum Beenden")
+        while True:
+            user_prompt = Prompt.ask("Frage")
+            if user_prompt.lower() in ['exit', 'quit', 'q']:
+                break
+
+            response = trainer.query_model(str(model_path), user_prompt, max_length)
+            if response:
+                console.print(f"\n[bold cyan]Antwort:[/bold cyan] {response}\n")
+            else:
+                console.print("[red]❌[/red] Fehler bei der Abfrage")
+    else:
+        # Einzelne Abfrage
+        if not prompt:
+            prompt = Prompt.ask("Prompt")
+
+        response = trainer.query_model(str(model_path), prompt, max_length)
+        if response:
+            console.print(response)
+        else:
+            console.print("[red]❌[/red] Fehler bei der Abfrage")
 
 
 @cli.command()

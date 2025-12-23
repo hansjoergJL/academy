@@ -390,31 +390,84 @@ class ModelTrainer:
     def list_available_models(self):
         """Liste verfügbare Modelle auf"""
         models_dir = Path(self.training_config.output_dir)
-        
+
         table = Table(title="Verfügbare Modelle")
         table.add_column("Modellname", style="cyan")
         table.add_column("Pfad", style="green")
         table.add_column("Größe", style="white")
         table.add_column("Erstellt", style="dim")
-        
+
         if models_dir.exists():
             for model_path in models_dir.iterdir():
                 if model_path.is_dir() and model_path.name != 'hf_cache':
                     # Berechne Größe
                     model_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
                     size_str = f"{model_size / 1024 / 1024:.1f} MB"
-                    
+
                     # Erstellzeit
                     mtime = model_path.stat().st_mtime
                     import datetime
                     created = datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M")
-                    
+
                     table.add_row(model_path.name, str(model_path), size_str, created)
         else:
             console.print("[yellow]Keine Modelle gefunden[/yellow]")
             return
-        
+
         console.print(table)
+
+    def query_model(self, model_path: str, prompt: str, max_length: int = 100) -> str:
+        """Frage ein trainiertes Modell ab"""
+        console.print(f"[blue]🤖[/blue] Frage Modell ab: {model_path}")
+
+        try:
+            from transformers import AutoTokenizer, AutoModelForCausalLM
+            from peft import PeftModel
+
+            # Basis-Modell laden
+            base_model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
+
+            # LoRA Modell laden
+            model = PeftModel.from_pretrained(base_model, model_path)
+
+            # Tokenizer laden
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+
+            # Device
+            device = self.training_config.device if self.training_config.device != "auto" else ("cuda" if torch.cuda.is_available() else "cpu")
+            model.to(device)
+            model.eval()
+
+            # Tokenisiere Prompt
+            inputs = tokenizer(prompt, return_tensors="pt").to(device)
+
+            # Generiere Antwort
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs,
+                    max_length=max_length + len(inputs['input_ids'][0]),
+                    num_return_sequences=1,
+                    do_sample=True,
+                    temperature=0.7,
+                    pad_token_id=tokenizer.pad_token_id
+                )
+
+            # Decode Antwort
+            response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+            # Entferne Prompt aus Antwort
+            if response.startswith(prompt):
+                response = response[len(prompt):].strip()
+
+            console.print("[green]✅[/green] Antwort generiert")
+            return response
+
+        except Exception as e:
+            console.print(f"[red]❌[/red] Fehler bei Modell-Abfrage: {e}")
+            return ""
 
 
 def main():
