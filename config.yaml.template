@@ -41,7 +41,7 @@ training:
     r: 8                    # Rank
     alpha: 16               # Scaling parameter
     dropout: 0.05           # Dropout rate
-    target_modules:         # Module für Adaptation
+    target_modules:         # Module für Adaptation (modellspezifisch anpassen)
       - "q_proj"
       - "v_proj"
       - "k_proj"

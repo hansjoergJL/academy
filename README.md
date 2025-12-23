@@ -152,22 +152,108 @@ trainer.train_model("data/training/fine_tuning_guide_training.json", "fine_tunin
 3. **Dokumentqualität**: Gute OCR-Voraussetzungen für PDFs
 4. **Chunking-Strategie**: Balance zwischen Kontext und Spezifität
 
-## Nutzungsbeispiel
+## Explizite Vorgehensweise für Modell-Training
 
+Um ein oder mehrere Dokumente als Basis für ein spezialisiertes Sprachmodell zu verwenden, das anschließend einfach befragt werden kann, folgen Sie dieser Schritt-für-Schritt-Anleitung:
+
+### 1. Umgebung einrichten
 ```bash
-# 1. Environment einrichten
+# Abhängigkeiten installieren
+pip install -r requirements.txt
+
+# Environment Setup ausführen
+python setup_environment.py
+```
+
+### 2. Konfiguration vorbereiten
+```bash
+# Konfigurationsdatei erstellen
+cp config.yaml.template config.yaml
+
+# config.yaml bearbeiten:
+# - OPENROUTER_API_KEY setzen (Umgebungsvariable oder direkt in der Datei)
+# - use_cpu: true setzen, falls keine GPU verfügbar
+# - Andere Parameter anpassen (Modellnamen, Pfade, etc.)
+```
+
+### 3. Dokumente vorbereiten
+```bash
+# Dokumente in das data/raw Verzeichnis kopieren
+cp dokument.pdf data/raw/
+
+# Mehrere Dokumente sind möglich - alle PDFs im raw Verzeichnis werden verarbeitet
+cp dokument2.pdf data/raw/
+cp dokument3.pdf data/raw/
+```
+
+### 4. Wissensdestillation durchführen
+```bash
+# CLI verwenden (empfohlen)
+academy train --input data/raw/dokument.pdf --model-name mein-modell
+
+# Für mehrere Dokumente: Mehrere --input Parameter oder alle PDFs im raw Verzeichnis
+academy train --input data/raw/ --model-name mein-modell
+```
+
+**Was passiert in diesem Schritt:**
+- Dokumente werden in Text konvertiert
+- Text wird in Chunks aufgeteilt
+- Mit Hilfe der OpenRouter API werden aus jedem Chunk einfache Sätze generiert
+- Die generierten Sätze werden als JSON-Trainingsdaten gespeichert
+
+### 5. Modell fine-tunen
+```bash
+# Das Training startet automatisch nach der Destillation
+# Bei Bedarf manuelles Training:
+python -c "
+from academy.config_manager import ConfigManager
+from academy.model_trainer import ModelTrainer
+config = ConfigManager()
+trainer = ModelTrainer(config)
+trainer.train_model('data/training/mein-modell_training.json', 'mein-modell')
+"
+```
+
+**Was passiert beim Training:**
+- TinyLlama-Modell wird mit LoRA-Technik fine-getuned
+- Training basiert auf den destillierten Sätzen
+- Modell wird in models/custom/mein-modell gespeichert
+
+### 6. Modell abfragen
+```bash
+# Interaktive Abfrage starten
+academy query --model-name mein-modell
+
+# Einzelne Frage stellen
+academy query --model-name mein-modell --prompt "Was ist der Hauptinhalt des Dokuments?"
+```
+
+### Vollständiges Beispiel
+```bash
+# 1. Setup
+pip install -r requirements.txt
 python setup_environment.py
 
-# 2. Konfiguration anpassen
+# 2. Konfiguration
 cp config.yaml.template config.yaml
-# Edit config.yaml mit OpenRouter API Key
+# Bearbeiten Sie config.yaml mit Ihrem API-Key
 
-# 3. PDF verarbeiten und Modell trainieren
-academy train --input fachbuch.pdf --model-name mathematik-experte
+# 3. Dokumente vorbereiten
+cp mein-dokument.pdf data/raw/
 
-# 4. Abfragen des trainierten Modells
-academy query --model-name mathematik-experte
+# 4. Training durchführen
+academy train --input data/raw/mein-dokument.pdf --model-name spezialist-modell
+
+# 5. Abfragen
+academy query --model-name spezialist-modell
+# Beispiel-Frage: "Erkläre die wichtigsten Konzepte aus dem Dokument"
 ```
+
+### Hinweise
+- **Zeitaufwand**: Destillation kann je nach Dokumentlänge 10-60 Minuten dauern
+- **Hardware**: CPU-Training benötigt mindestens 8GB RAM, GPU wird empfohlen
+- **Kosten**: OpenRouter API hat kostenlose Kontingente, aber Limits beachten
+- **Qualität**: Die Qualität des Modells hängt von der Dokumentqualität ab
 
 ## License
 

@@ -234,7 +234,7 @@ def train(ctx, input, model_name, output, overwrite, skip_distillation, cl):
 @click.option('--model-name', '-m', required=True, help='Name des abzufragenden Modells')
 @click.option('--interactive', '-i', is_flag=True, help='Interaktiver Abfragemodus')
 @click.option('--prompt', '-p', help='Direkter Prompt für nicht-interaktive Abfrage')
-@click.option('--max-length', '-l', default=100, help='Maximale Antwortlänge')
+@click.option('--max-length', '-l', default=300, help='Maximale Antwortlänge')
 @click.pass_context
 def query(ctx, model_name, interactive, prompt, max_length):
     """Frage ein trainiertes Modell ab"""

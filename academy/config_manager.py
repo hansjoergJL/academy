@@ -29,7 +29,7 @@ class ConfigManager:
         # Setze Konfigurationspfad
         if config_path is None:
             # Projektverzeichnis finden
-            project_root = Path(__file__).parent.parent.parent
+            project_root = Path(__file__).parent.parent
             config_path = project_root / "config.yaml"
         
         self.config_path = Path(config_path) if config_path else None

@@ -59,16 +59,17 @@ class TrainingConfig:
 
 class TinyLlamaTrainer:
     """TinyLlama Fine-Tuning mit LoRA"""
-    
-    def __init__(self, config: TrainingConfig):
+
+    def __init__(self, config: TrainingConfig, config_manager: ConfigManager):
         """Initialisiere TinyLlamaTrainer"""
         self.config = config
+        self.config_manager = config_manager
         self.device = self._get_device()
         console.print(f"[green]✅[/green] Device: {self.device}")
-        
+
         # Installiere fehlende Dependencies
         self._check_dependencies()
-        
+
         # Setup Model und Tokenizer
         self._setup_model_and_tokenizer()
     
@@ -107,7 +108,7 @@ class TinyLlamaTrainer:
     
     def _setup_model_and_tokenizer(self):
         """Lade Modell und Tokenizer"""
-        model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+        model_name = self.config_manager.get_huggingface_config()['base_model']
         
         console.print(f"[blue]🤖[/blue] Lade Modell: {model_name}")
         
@@ -275,7 +276,7 @@ class TinyLlamaTrainer:
             # Metadaten speichern
             metadata = {
                 "model_name": model_name,
-                "base_model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+                "base_model": self.config_manager.get_huggingface_config()['base_model'],
                 "training_config": self.config.__dict__,
                 "training_samples": len(dataset),
                 "training_time_seconds": training_time,
@@ -372,7 +373,7 @@ class ModelTrainer:
 
     def train_model(self, training_data_path: str, model_name: str) -> Optional[str]:
         """Trainiere Modell mit gegebenen Daten"""
-        console.print(Panel.fit(f"[bold blue]Model Training[/bold blue]\\nModel: {model_name}\\nDaten: {training_data_path}"))
+        console.print(Panel.fit(f"[bold blue]Model Training[/bold blue]\\nModel: {model_name}\\nDaten: {training_data_path}", width=80))
         
         # Validiere Eingabedaten
         if not Path(training_data_path).exists():
@@ -380,7 +381,7 @@ class ModelTrainer:
             return None
         
         # Erstelle Trainer
-        trainer = TinyLlamaTrainer(self.training_config)
+        trainer = TinyLlamaTrainer(self.training_config, self.config_manager)
         
         # Führe Training durch
         result_path = trainer.train(training_data_path, model_name)
@@ -425,7 +426,7 @@ class ModelTrainer:
             from peft import PeftModel
 
             # Basis-Modell laden
-            base_model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            base_model_name = self.config_manager.get_huggingface_config()['base_model']
             base_model = AutoModelForCausalLM.from_pretrained(base_model_name)
 
             # LoRA Modell laden
