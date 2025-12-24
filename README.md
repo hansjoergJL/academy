@@ -1,6 +1,4 @@
-# Academy - Wissensdestillation für Spezialmodelle (LLM Finetuning)
-
-**Entwickler:** Hans-Jörg Jödike, JL Software Solutions GbR.
+# Academy - Wissensdestillation für Spezialmodelle und LLM Finetuning
 
 ## Projektzusammenfassung
 
@@ -93,9 +91,9 @@ Beispiel für das Fine-Tuning-Leitfaden Modell:
 trainer.train_model("data/training/fine_tuning_guide_training.json", "fine_tuning_guide")
 ```
 
-## Umsetzbarkeits-Analyse
+## Technik
 
-**Vollständig umsetzbar:**
+**Besonderheiten:**
 - PDF-Textextraktion mit `pypdf`
 - OpenRouter API-Integration mit kostenlosen Modellen
 - TinyLlama Fine-Tuning mit Hugging Face Transformers und LoRA
@@ -106,51 +104,38 @@ trainer.train_model("data/training/fine_tuning_guide_training.json", "fine_tunin
 - OpenRouter API Key
 - Python 3.8+ Umgebung
 
-## Schrittweise Implementierungsplan
+## Umgesetzter Implementierungsplan
 
-### Phase 1: Environment Setup (Woche 1)
+### Phase 1: Environment Setup
 1. ✅ Projektstruktur erstellen
 2. ⏳ Requirements.txt definieren
 3. ⏳ Config Template erstellen
 4. ⏳ Environment Setup Skript
 5. ⏳ Grundlegende CLI Struktur
 
-### Phase 2: Kernkomponenten (Woche 2-3)
+### Phase 2: Kernkomponenten
 1. ⏳ Konfigurations-Manager
 2. ⏳ Dokumenten-Prozessor (PDF + Chunking)
 3. ⏳ OpenRouter Integration
 4. ⏳ Basis CLI Commands
 
-### Phase 3: ML Pipeline (Woche 3-4)
+### Phase 3: ML Pipeline
 1. ⏳ Wissens-Destillation
 2. ⏳ TinyLlama Trainer
 3. ⏳ Datenformatierung
 4. ⏳ Modell-Speicherung
 
-### Phase 4: Query & Integration (Woche 4-5)
+### Phase 4: Query & Integration
 1. ⏳ Query Engine
 2. ⏳ Modell-Management
 3. ⏳ Error Handling
 4. ⏳ Logging System
 
-### Phase 5: Testing & Optimierung (Woche 5-6)
+### Phase 5: Testing & Optimierung
 1. ⏳ Unit Tests
 2. ⏳ Integration Tests
 3. ⏳ Performance Optimierung
 4. ⏳ Dokumentation
-
-## Geschätzter Entwicklungsaufwand
-
-- **MVP (Minimum Viable Product)**: 2-3 Wochen
-- **Vollständige Implementierung**: 4-6 Wochen
-- **Testing & Optimierung**: 1-2 Wochen
-
-## Kritische Erfolgsfaktoren
-
-1. **OpenRouter API Key** für den Zugriff auf kostenlose Modelle
-2. **Hardware-Anforderungen**: Mindestens 8GB RAM, 16GB+ empfohlen
-3. **Dokumentqualität**: Gute OCR-Voraussetzungen für PDFs
-4. **Chunking-Strategie**: Balance zwischen Kontext und Spezifität
 
 ## Explizite Vorgehensweise für Modell-Training
 
@@ -255,6 +240,10 @@ academy query --model-name spezialist-modell
 - **Kosten**: OpenRouter API hat kostenlose Kontingente, aber Limits beachten
 - **Qualität**: Die Qualität des Modells hängt von der Dokumentqualität ab
 
+## Entwickler
+
+Hans-Jörg Jödike, JL Software Solutions GbR.
+
 ## License
 
-[License Type - hinzufügen]
+MIT
